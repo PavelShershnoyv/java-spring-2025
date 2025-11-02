@@ -13,11 +13,14 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.shershnoyv.MyFirstTestAppSpringBoot.exception.UnsupportedCodeException;
 import ru.shershnoyv.MyFirstTestAppSpringBoot.exception.ValidationFailedException;
 import ru.shershnoyv.MyFirstTestAppSpringBoot.model.*;
-import ru.shershnoyv.MyFirstTestAppSpringBoot.service.ModifyRequestService;
 import ru.shershnoyv.MyFirstTestAppSpringBoot.service.ModifyResponseService;
 import ru.shershnoyv.MyFirstTestAppSpringBoot.service.ValidationService;
 import ru.shershnoyv.MyFirstTestAppSpringBoot.util.DateTimeUtil;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 @Slf4j
@@ -25,20 +28,20 @@ import java.util.Date;
 public class MyController {
     private final ValidationService validationService;
     private final ModifyResponseService modifyResponseService;
-    private final ModifyRequestService modifyRequestService;
 
     @Autowired
     public MyController(ValidationService validationService,
-                        @Qualifier("ModifySystemTimeResponseService") ModifyResponseService modifyResponseService,
-                        @Qualifier("ModifySystemTimeRequestService") ModifyRequestService modifyRequestService) {
+                        @Qualifier("ModifySystemTimeResponseService") ModifyResponseService modifyResponseService) {
         this.validationService = validationService;
         this.modifyResponseService = modifyResponseService;
-        this.modifyRequestService = modifyRequestService;
     }
 
     @PostMapping(value = "/feedback")
     public ResponseEntity<Response> feedback(@Valid @RequestBody Request request, BindingResult bindingResult) {
         log.info("request: {}", request);
+//        String currentTime = DateTimeUtil.getCustomFormat().format(new Date());
+//        String sendTime = request.getSystemTime();
+//        log.info("SendTime: {}, CurrentTime: {}", sendTime, currentTime);
 
         Response response = Response.builder()
                 .uid(request.getUid())
@@ -75,8 +78,14 @@ public class MyController {
         }
 
         modifyResponseService.modify(response);
-        modifyRequestService.modify(request);
         log.info("response: {}", response);
+
+        Instant sendTime = Instant.parse(request.getSystemTime());
+        Instant currentTime = Instant.parse(response.getSystemTime());
+        Duration difference = Duration.between(sendTime, currentTime);
+        long millis = difference.toMillis();
+
+        log.info("Разница в миллисекундах: {}", millis);
         return new ResponseEntity<>(modifyResponseService.modify(response), HttpStatus.OK);
     }
 }
