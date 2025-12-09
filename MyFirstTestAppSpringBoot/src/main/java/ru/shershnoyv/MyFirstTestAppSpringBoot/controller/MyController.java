@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.shershnoyv.MyFirstTestAppSpringBoot.exception.UnsupportedCodeException;
 import ru.shershnoyv.MyFirstTestAppSpringBoot.exception.ValidationFailedException;
 import ru.shershnoyv.MyFirstTestAppSpringBoot.model.*;
+import ru.shershnoyv.MyFirstTestAppSpringBoot.service.AnnualBonusService;
 import ru.shershnoyv.MyFirstTestAppSpringBoot.service.ModifyRequestService;
 import ru.shershnoyv.MyFirstTestAppSpringBoot.service.ModifyResponseService;
 import ru.shershnoyv.MyFirstTestAppSpringBoot.service.ValidationService;
@@ -26,14 +27,17 @@ public class MyController {
     private final ValidationService validationService;
     private final ModifyResponseService modifyResponseService;
     private final ModifyRequestService modifyRequestService;
+    private final AnnualBonusService annualBonusService;
 
     @Autowired
     public MyController(ValidationService validationService,
                         @Qualifier("ModifySystemTimeResponseService") ModifyResponseService modifyResponseService,
-                        @Qualifier("ModifySystemTimeRequestService") ModifyRequestService modifyRequestService) {
+                        @Qualifier("ModifySystemTimeRequestService") ModifyRequestService modifyRequestService,
+                        AnnualBonusService annualBonusService) {
         this.validationService = validationService;
         this.modifyResponseService = modifyResponseService;
         this.modifyRequestService = modifyRequestService;
+        this.annualBonusService = annualBonusService;
     }
 
     @PostMapping(value = "/feedback")
@@ -73,6 +77,14 @@ public class MyController {
             log.error("response: {}", response);
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
+
+        double annualBonus = annualBonusService.calculate(
+                request.getPosition(),
+                request.getSalary(),
+                request.getBonus(),
+                request.getWorkDays()
+        );
+        response.setAnnualBonus(annualBonus);
 
         modifyResponseService.modify(response);
         modifyRequestService.modify(request);
